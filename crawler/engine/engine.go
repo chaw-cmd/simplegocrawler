@@ -3,6 +3,7 @@ package engine
 import (
 	"log"
 	"simplegocrawler/crawler/fetcher"
+	"time"
 )
 
 func Run(seeds ... Request) {
@@ -25,6 +26,7 @@ func Run(seeds ... Request) {
 		for _, item := range parseResult.Items {
 			log.Printf("got item: %v", item)
 		}
+		time.Sleep(3 * time.Second) // speed limit, for local testing
 	}
 
 }
