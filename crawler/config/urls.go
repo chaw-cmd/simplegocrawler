@@ -1,6 +1,6 @@
 package config
 
 const (
-	// mapped webpage, on localhost
+	// MainPage target main webpage, mapped to localhost
 	MainPage = "http://localhost:8080/mock/www.zhenai.com/zhenghun"
 )
