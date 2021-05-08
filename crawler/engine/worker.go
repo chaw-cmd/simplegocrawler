@@ -16,9 +16,11 @@ func InputWorker(request Request) (ParseResult, error) {
 	return request.ParserFunc(content), nil
 }
 
-func CreateInputWorkers(cin chan Request, cout chan ParseResult) {
+func CreateInputWorker(cin chan Request, cout chan ParseResult, notifier ReadyNotifier) {
 	go func() {
 		for {
+			notifier.WorkerReady(cin)
+
 			request := <-cin
 			result, err := InputWorker(request)
 			if err != nil {

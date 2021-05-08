@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"time"
+	"log"
 )
 
 type ConcurrentEngine struct {
@@ -10,36 +10,59 @@ type ConcurrentEngine struct {
 }
 
 type Scheduler interface {
+	ReadyNotifier
 	Submit(request Request)
-	ConfigWorkerChannel(workerChannel chan Request)
+	WorkerChan() chan Request
+	Run()
+}
+
+type ReadyNotifier interface {
+	WorkerReady(chan Request)
 }
 
 func (ce *ConcurrentEngine) Run(seeds ... Request) {
 	// 1. init workers
-	cin := make(chan Request)
 	cout := make(chan ParseResult)
+	ce.Scheduler.Run()
 	for i := 0; i < ce.NumberOfWorkers; i++ {
-		CreateInputWorkers(cin, cout)
-		CreateOutputWorker(cout, ce)
+		CreateInputWorker(ce.Scheduler.WorkerChan(), cout, ce.Scheduler)
+		//CreateOutputWorker(cout, ce)
 	}
 
 	// 2. send initial jobs
-	ce.Scheduler.ConfigWorkerChannel(cin)
 	for _, request := range seeds {
+		if visited(request.Url) {
+			log.Printf("Find duplicate url: %s, skipped.", request.Url)
+			continue
+		}
 		ce.Scheduler.Submit(request)
 	}
 
 	// 3. output items to console output
-	//for {
-	//	result := <-cout
-	//	for _, item := range result.Items {
-	//		log.Printf("Got item: %v", item)
-	//	}
-	//
-	//	for _, request := range result.Requests {
-	//		ce.Scheduler.Submit(request)
-	//	}
-	//}
+	for {
+		result := <-cout
+		for _, item := range result.Items {
+			log.Printf("Got item: %v", item)
+		}
 
-	time.Sleep(10 * time.Second)
+		for _, request := range result.Requests {
+			if visited(request.Url) {
+				log.Printf("Find duplicate url: %s, skipped.", request.Url)
+				continue
+			}
+			ce.Scheduler.Submit(request)
+		}
+	}
+
+	//time.Sleep(10 * time.Second)
+}
+
+var visitedMap = make(map[string]bool)
+func visited(url string) bool {
+	if visitedMap[url] {
+		return true
+	}
+
+	visitedMap[url] = true
+	return false
 }

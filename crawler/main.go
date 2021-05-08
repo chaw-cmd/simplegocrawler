@@ -9,7 +9,7 @@ import (
 
 func main() {
 	crawlerEngine := &engine.ConcurrentEngine{
-		Scheduler:       &scheduler.SimpleScheduler{}, // pointer?
+		Scheduler:       &scheduler.QueuedScheduler{}, // pointer?
 		NumberOfWorkers: 3,
 	}
 
