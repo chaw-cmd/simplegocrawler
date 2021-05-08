@@ -26,12 +26,12 @@ func (ce *ConcurrentEngine) Run(seeds ... Request) {
 	ce.Scheduler.Run()
 	for i := 0; i < ce.NumberOfWorkers; i++ {
 		CreateInputWorker(ce.Scheduler.WorkerChan(), cout, ce.Scheduler)
-		//CreateOutputWorker(cout, ce)
 	}
 
 	// 2. send initial jobs
 	for _, request := range seeds {
 		if visited(request.Url) {
+			// add to map for deduplication
 			log.Printf("Find duplicate url: %s, skipped.", request.Url)
 			continue
 		}
@@ -47,6 +47,7 @@ func (ce *ConcurrentEngine) Run(seeds ... Request) {
 
 		for _, request := range result.Requests {
 			if visited(request.Url) {
+				// add to map for deduplication
 				log.Printf("Find duplicate url: %s, skipped.", request.Url)
 				continue
 			}
@@ -54,9 +55,12 @@ func (ce *ConcurrentEngine) Run(seeds ... Request) {
 		}
 	}
 
+	// use output worker(separate goroutine)
+	//CreateOutputWorker(cout, ce)
 	//time.Sleep(10 * time.Second)
 }
 
+// todo: bloom filter
 var visitedMap = make(map[string]bool)
 func visited(url string) bool {
 	if visitedMap[url] {
