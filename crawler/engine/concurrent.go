@@ -2,11 +2,13 @@ package engine
 
 import (
 	"log"
+	"simplegocrawler/crawler/persist"
 )
 
 type ConcurrentEngine struct {
 	Scheduler Scheduler
 	NumberOfWorkers int // set non-zero default??
+	PersistWorker persist.Worker
 }
 
 type Scheduler interface {
@@ -23,10 +25,11 @@ type ReadyNotifier interface {
 func (ce *ConcurrentEngine) Run(seeds ... Request) {
 	// 1. init workers
 	cout := make(chan ParseResult)
-	ce.Scheduler.Run()
 	for i := 0; i < ce.NumberOfWorkers; i++ {
 		CreateInputWorker(ce.Scheduler.WorkerChan(), cout, ce.Scheduler)
 	}
+	ce.PersistWorker.CreateWorker()
+	ce.Scheduler.Run()
 
 	// 2. send initial jobs
 	for _, request := range seeds {
@@ -42,7 +45,7 @@ func (ce *ConcurrentEngine) Run(seeds ... Request) {
 	for {
 		result := <-cout
 		for _, item := range result.Items {
-			log.Printf("Got item: %v", item)
+			ce.PersistWorker.Save(item)
 		}
 
 		for _, request := range result.Requests {
@@ -58,6 +61,10 @@ func (ce *ConcurrentEngine) Run(seeds ... Request) {
 	// use output worker(separate goroutine)
 	//CreateOutputWorker(cout, ce)
 	//time.Sleep(10 * time.Second)
+}
+
+func saveToFile(item interface{}) {
+
 }
 
 // todo: bloom filter
